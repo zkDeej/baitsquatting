@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; max-width: 900px; margin: 40px auto; color: #222; }
+  h1 { font-size: 22px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+  h2 { font-size: 16px; color: #444; margin-top: 40px; border-left: 4px solid #555; padding-left: 10px; }
+  .diagram { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 24px; margin: 16px 0; }
+
+  /* Flow diagram */
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 0; margin: 8px 0; }
+  .step { background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 8px 12px; font-size: 13px; text-align: center; min-width: 120px; }
+  .step.red { border-color: #c00; background: #fff5f5; }
+  .step.green { border-color: #090; background: #f5fff5; }
+  .step.orange { border-color: #c60; background: #fffbf0; }
+  .step.blue { border-color: #06c; background: #f0f7ff; }
+  .arrow { font-size: 18px; color: #888; padding: 0 6px; }
+  .label { font-size: 11px; color: #888; text-align: center; margin-top: 3px; }
+
+  /* Decision tree */
+  .decision { font-family: Arial, sans-serif; font-size: 13px; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 8px 16px; }
+  .dt-row { display: flex; align-items: flex-start; margin: 4px 0; }
+  .dt-indent1 { padding-left: 28px; }
+  .dt-indent2 { padding-left: 56px; }
+  .dt-indent3 { padding-left: 84px; }
+  .dt-indent4 { padding-left: 112px; }
+  .dt-q { background: #e8f0fe; border: 1px solid #aac4f5; border-radius: 6px; padding: 5px 12px; font-weight: bold; color: #1a3a6e; display: inline-block; margin: 3px 0; }
+  .dt-safe { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 6px; padding: 5px 12px; color: #1b5e20; display: inline-block; margin: 3px 0; }
+  .dt-warn { background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px; padding: 5px 12px; color: #7b4f00; display: inline-block; margin: 3px 0; }
+  .dt-danger { background: #ffebee; border: 1px solid #ef9a9a; border-radius: 6px; padding: 5px 12px; color: #b71c1c; display: inline-block; margin: 3px 0; }
+  .dt-branch { color: #555; font-size: 12px; padding: 2px 8px 2px 0; white-space: nowrap; }
+  .d-q { color: #004a8f; font-weight: bold; }
+  .d-yes { color: #090; }
+  .d-no { color: #888; }
+  .d-result-b { color: #c00; font-weight: bold; }
+  .d-result-a { color: #856404; font-weight: bold; }
+  .d-safe { color: #090; font-weight: bold; }
+
+  /* Taxonomy axes */
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th { background: #f2f2f2; text-align: left; padding: 8px 10px; border: 1px solid #ddd; }
+  td { padding: 8px 10px; border: 1px solid #ddd; vertical-align: top; }
+  code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+
+  .matrix-b { background: #fff5f5; }
+  .matrix-a { background: #fffbf0; }
+  .matrix-safe { background: #f5fff5; }
+
+  /* Responsibility matrix */
+  .resp-high { background: #ffe0e0; text-align: center; }
+  .resp-med { background: #fff3cd; text-align: center; }
+  .resp-low { background: #e8f5e9; text-align: center; }
+  .resp-none { background: #f5f5f5; text-align: center; color: #aaa; }
+</style>
+</head>
+<body>
+
+<h1>BSQT-2026-001 — Visual Reference</h1>
+<p style="color:#666; font-size:13px;">Last updated: 2026-05-08</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>1 — Flow B Attack Sequence (live incident)</h2>
+<div class="diagram">
+  <div class="flow">
+    <div><div class="step blue">Developer asks AI<br>to set up CI</div><div class="label">vibe coder,<br>non-developer</div></div>
+    <div class="arrow">→</div>
+    <div><div class="step blue">AI reads tool docs<br><code>lhci autorun</code></div><div class="label">follows official<br>documentation</div></div>
+    <div class="arrow">→</div>
+    <div><div class="step orange">AI proposes<br><code>npx lhci autorun</code></div><div class="label">permission prompt<br>shown to user</div></div>
+    <div class="arrow">→</div>
+    <div><div class="step orange">User approves<br>(trusts AI)</div><div class="label">can't evaluate<br>bare package name</div></div>
+    <div class="arrow">→</div>
+    <div><div class="step red">npm resolves<br><code>lhci</code> → AnupamAS01</div><div class="label">not GoogleChrome</div></div>
+    <div class="arrow">→</div>
+    <div><div class="step red">Stranger's code runs<br>in shell with .env</div><div class="label">all secrets<br>accessible</div></div>
+  </div>
+  <p style="font-size:12px; color:#888; margin-top:16px;">
+    <strong>Why it works:</strong> GoogleChrome named their binary <code>lhci</code>, documented <code>npx lhci autorun</code>, trained every AI model on that pattern — and never claimed the bare <code>lhci</code> npm namespace.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>2 — Is Your Package at Risk? Decision Tree</h2>
+<div class="diagram">
+  <div class="decision">
+
+    <div class="dt-row"><span class="dt-q">Q1: Is your package scoped? (e.g. @org/cli)</span></div>
+    <div class="dt-row dt-indent1"><span class="dt-branch">NO →</span><span class="dt-safe">✅ You own the bare name already. Not vulnerable.</span></div>
+    <div class="dt-row dt-indent1"><span class="dt-branch">YES ↓</span></div>
+
+    <div class="dt-row dt-indent1"><span class="dt-q">Q2: Does your CLI binary have a bare name? (e.g. <code>mycli</code>)</span></div>
+    <div class="dt-row dt-indent2"><span class="dt-branch">NO →</span><span class="dt-safe">✅ Binary is scoped — users invoke via full path. Not vulnerable.</span></div>
+    <div class="dt-row dt-indent2"><span class="dt-branch">YES ↓</span></div>
+
+    <div class="dt-row dt-indent2"><span class="dt-q">Q3: Do your docs teach <code>npx &lt;bare-name&gt;</code> as primary invocation?</span></div>
+    <div class="dt-row dt-indent3"><span class="dt-branch">NO →</span><span class="dt-safe">✅ Docs use scoped form. AI follows docs — likely safe.</span></div>
+    <div class="dt-row dt-indent3"><span class="dt-branch">YES ↓</span></div>
+
+    <div class="dt-row dt-indent3"><span class="dt-q">Q4: Does your org own the bare npm namespace?</span></div>
+    <div class="dt-row dt-indent4"><span class="dt-branch">YES →</span><span class="dt-safe">✅ Protected. Publish a placeholder if the package is empty.</span></div>
+    <div class="dt-row dt-indent4"><span class="dt-branch">UNCLAIMED →</span><span class="dt-danger">🔴 FLOW B HIGH — any attacker can register today. Act now.</span></div>
+    <div class="dt-row dt-indent4"><span class="dt-branch">THIRD PARTY ↓</span></div>
+
+    <div class="dt-row dt-indent4"><span class="dt-q">Q5: Is the third-party package legitimate &amp; maintained?</span></div>
+    <div class="dt-row" style="padding-left:140px;"><span class="dt-branch">YES →</span><span class="dt-warn">🟡 FLOW B MEDIUM — account compromise is the residual risk.</span></div>
+    <div class="dt-row" style="padding-left:140px;"><span class="dt-branch">NO (abandoned) →</span><span class="dt-danger">🟠 FLOW B HIGH — abandoned account = transfer/compromise risk.</span></div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>3 — Taxonomy Axes</h2>
+<div class="diagram">
+  <table>
+    <tr>
+      <th></th>
+      <th>Typosquatting</th>
+      <th>Slopsquatting</th>
+      <th>Baitsquatting — Flow B</th>
+      <th>Baitsquatting — Flow A</th>
+    </tr>
+    <tr>
+      <td><strong>Wrong name source</strong></td>
+      <td>Human typo</td>
+      <td>AI hallucination</td>
+      <td>AI follows tool's own docs — no error</td>
+      <td>AI model output error — drops scope</td>
+    </tr>
+    <tr>
+      <td><strong>Trigger</strong></td>
+      <td>Typing mistake</td>
+      <td>AI generates non-existent name</td>
+      <td><code>npx &lt;bare-name&gt;</code></td>
+      <td><code>npm install &lt;bare-name&gt;</code></td>
+    </tr>
+    <tr>
+      <td><strong>Attacker prerequisite</strong></td>
+      <td>Predict common typos</td>
+      <td>Monitor AI outputs for hallucinated names</td>
+      <td colspan="2">Register the obvious bare alias — completely predictable</td>
+    </tr>
+    <tr>
+      <td><strong>AI fix</strong></td>
+      <td>Not applicable</td>
+      <td>Reduce hallucination</td>
+      <td>Pre-execution registry check for bare npx</td>
+      <td>Verify package publisher at install time</td>
+    </tr>
+    <tr>
+      <td><strong>Env exposure</strong></td>
+      <td>Install scripts</td>
+      <td>Install scripts</td>
+      <td class="matrix-b"><strong>Full shell (all secrets)</strong></td>
+      <td class="matrix-a">Install scripts only</td>
+    </tr>
+    <tr>
+      <td><strong>Audit trail</strong></td>
+      <td>lockfile</td>
+      <td>lockfile</td>
+      <td class="matrix-b"><strong>None</strong></td>
+      <td class="matrix-a">package.json + lockfile</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>4 — Responsibility Matrix</h2>
+<div class="diagram">
+  <table>
+    <tr>
+      <th>Party</th>
+      <th>Flow B responsibility</th>
+      <th>Flow A responsibility</th>
+      <th>Suggested action</th>
+    </tr>
+    <tr>
+      <td><strong>Tool maintainer</strong><br><small>
+        <span class="tag tag-b">B</span> <code>@lhci/cli</code> → <code>lhci</code> (notified ✅)<br>
+        <span class="tag tag-b">B</span> <code>@changesets/cli</code> → <code>changeset</code> (notified ✅)<br>
+        <span class="tag tag-b">B</span> <code>dependency-cruiser</code> → <code>depcruise</code> (notified ✅)<br>
+        <span class="tag tag-b">B</span> <code>@biomejs/biome</code> → <code>biome</code> (notified ✅ — acknowledged, seeking transfer)<br>
+        <span class="tag tag-b">B</span> <code>@moonrepo/cli</code> → <code>moon</code> (notified ✅ — awaiting)<br>
+        <span class="tag tag-a">A*</span> <code>@aws-sdk/client-*</code> → <code>aws-sdk-client-s3</code> etc (notified ✅)<br>
+        <span class="tag tag-a">A*</span> <code>@stripe/stripe-js</code> → <code>stripe-js</code> (notified ✅)<br>
+        <span class="tag tag-a">A*</span> <code>@prisma/client</code> → <code>prisma-client</code> (notified ✅)<br>
+        <span class="tag tag-a">A*</span> <code>@supabase/supabase-js</code> → <code>supabase-js</code> (notified ✅ — npm hold active)<br>
+        <span class="tag tag-a">A*</span> <code>@clerk/nextjs</code> → <code>clerk-nextjs</code> (✅ claimed 2026-04-30)<br>
+        <small style="color:#999;">* Adjacent cases — docs teach scoped name; model error unconfirmed; closer to slopsquatting. Reported under BSQT-2026-001.</small>
+      </small></td>
+      <td class="resp-high">HIGH<br>Created the namespace gap</td>
+      <td class="resp-med">MEDIUM<br>Created install-time confusion</td>
+      <td>Claim bare namespace. Publish placeholder redirect.</td>
+    </tr>
+    <tr>
+      <td><strong>AI platform</strong><br><small>(Anthropic, Cursor, Copilot, Replit, ChatGPT)</small></td>
+      <td class="resp-high">HIGH<br>Executes in non-developer envs without registry check</td>
+      <td class="resp-med">MEDIUM<br>Writes unverified names into package.json</td>
+      <td>Pre-execution registry check for bare <code>npx</code>. Flag publisher mismatch.</td>
+    </tr>
+    <tr>
+      <td><strong>npm registry</strong></td>
+      <td class="resp-med">MEDIUM<br>No binary name / namespace collision detection</td>
+      <td class="resp-med">MEDIUM<br>No proactive squatting alerts</td>
+      <td>Detect: scoped package binary name ≠ claimed bare namespace → alert maintainer.</td>
+    </tr>
+    <tr>
+      <td><strong>Developer / user</strong></td>
+      <td class="resp-low">LOW<br>Permission prompt shown — but non-developers can't evaluate</td>
+      <td class="resp-low">LOW<br>Could audit lockfile</td>
+      <td>Verify publisher before approving bare npx commands. Audit your project's dependency tree with SBOM.</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>5 — Suggested Action by Package Type</h2>
+<div class="diagram">
+  <table>
+    <tr>
+      <th>Your situation</th>
+      <th>Flow</th>
+      <th>Urgency</th>
+      <th>Suggested action</th>
+    </tr>
+    <tr class="matrix-b">
+      <td>Scoped CLI, bare binary, docs teach bare npx, namespace <strong>unclaimed</strong><br>
+        <small style="color:#c00;">
+          <code>biome</code> (@biomejs/biome) — notified ✅ · acknowledged, seeking npm transfer<br>
+          <code>moon</code> (@moonrepo/cli) — notified ✅ 2026-04-29 · awaiting
+        </small>
+      </td>
+      <td>B</td>
+      <td>🔴 High</td>
+      <td>Register bare namespace today. Publish placeholder. File npm report if squatted.</td>
+    </tr>
+    <tr class="matrix-safe">
+      <td>Scoped CLI, bare binary, namespace held by <strong>defensive placeholder</strong><br>
+        <small style="color:#090;">
+          <code>depcruise</code> (dependency-cruiser) — Aikido Security (debugducky) ✅
+        </small>
+      </td>
+      <td>B</td>
+      <td>🟢 Mitigated</td>
+      <td>Monitor. Coordinate with placeholder owner for eventual transfer to tool org.</td>
+    </tr>
+    <tr class="matrix-b">
+      <td>Scoped CLI, bare binary, docs teach bare npx, namespace held by <strong>abandoned/unrelated package</strong><br>
+        <small style="color:#c00;">
+          <code>lhci</code> (@lhci/cli) — AnupamAS01, PoC researcher — notified ✅<br>
+          <code>changeset</code> (@changesets/cli) — eugeneware (JSON diff lib, unrelated) — notified ✅
+        </small>
+      </td>
+      <td>B</td>
+      <td>🟠 Medium-High</td>
+      <td>Contact current owner re: transfer. Escalate to npm support if unresponsive.</td>
+    </tr>
+    <tr class="matrix-b">
+      <td>Scoped CLI, bare binary, docs teach bare npx, namespace held by <strong>active third party</strong><br>
+        <small style="color:#856404;">
+          <code>vue-cli-service</code> (@vue/cli-service) — community defensive squatter — notified ✅
+        </small>
+      </td>
+      <td>B</td>
+      <td>🟡 Medium</td>
+      <td>Monitor. Consider reaching out. Account compromise is the residual risk.</td>
+    </tr>
+    <tr class="matrix-a">
+      <td>Scoped library, no npx path, namespace unclaimed or third party — <em>adjacent cases, model error unconfirmed, closer to slopsquatting</em><br>
+        <small style="color:#856404;">
+          <code>aws-sdk-client-s3</code> + 5 variants (@aws-sdk/*) — notified ✅<br>
+          <code>stripe-js</code> (@stripe/stripe-js) — notified ✅<br>
+          <code>prisma-client</code> (@prisma/client) — notified ✅<br>
+          <code>supabase-js</code> (@supabase/supabase-js) — npm hold + notified ✅<br>
+          <code>clerk-nextjs</code> (@clerk/nextjs) — ✅ claimed 2026-04-30 (npm security team)
+        </small>
+      </td>
+      <td>A*</td>
+      <td>🟡 Low</td>
+      <td>Defensive registration optional. No urgent action required.</td>
+    </tr>
+    <tr class="matrix-safe">
+      <td>Tool owns bare namespace, or bare name is the official package<br>
+        <small style="color:#090;">
+          commitlint, knip, oxlint, release-it, lefthook, eslint, prettier, vercel, turbo, firebase-tools
+        </small>
+      </td>
+      <td>None</td>
+      <td>🟢 Safe</td>
+      <td>No action needed. Consider a redirect placeholder if namespace is empty.</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>6 — Outreach Tracker</h2>
+<div class="diagram">
+  <table>
+    <tr>
+      <th>Target</th>
+      <th>Flow</th>
+      <th>Bare alias → Real pkg</th>
+      <th>Bare pkg weekly DLs*</th>
+      <th>Channel</th>
+      <th>Status</th>
+      <th>Response</th>
+    </tr>
+
+    <!-- FLOW B -->
+    <tr style="background:#fff5f5;">
+      <td><strong>GoogleChrome / lighthouse-ci</strong></td>
+      <td><span class="tag tag-b">B</span></td>
+      <td><code>lhci</code> → <code>@lhci/cli</code></td>
+      <td>~3,200/wk (Apr 2026)</td>
+      <td><a href="https://github.com/GoogleChrome/lighthouse-ci/issues/1138">#1138</a></td>
+      <td>✅ Sent 2026-04-19</td>
+      <td>Open — awaiting</td>
+    </tr>
+    <tr style="background:#fff5f5;">
+      <td><strong>Changesets (Mateusz B.)</strong></td>
+      <td><span class="tag tag-b">B</span></td>
+      <td><code>changeset</code> → <code>@changesets/cli</code></td>
+      <td>n/a (legitimate 3rd-party library)</td>
+      <td>📧 Direct email</td>
+      <td>✅ Sent 2026-04-21</td>
+      <td>No reply — <code>changeset</code> is an unrelated abandoned library (eugeneware/changeset, JSON diff tool). Transfer would require negotiation. No defensive claim possible unilaterally.</td>
+    </tr>
+    <tr style="background:#e8f5e9;">
+      <td><strong>dependency-cruiser (sverweij)</strong></td>
+      <td><span class="tag tag-b">B</span></td>
+      <td><code>depcruise</code> → <code>dependency-cruiser</code></td>
+      <td>n/a (defensive placeholder)</td>
+      <td>📧 Direct email</td>
+      <td>✅ Sent 2026-04-21</td>
+      <td>✅ Already resolved — Aikido Security (debugducky) claimed <code>depcruise</code> as a defensive placeholder prior to outreach. No action needed.</td>
+    </tr>
+    <tr style="background:#fff5f5;">
+      <td><strong>BiomeJS</strong></td>
+      <td><span class="tag tag-b">B</span></td>
+      <td><code>biome</code> → <code>@biomejs/biome</code></td>
+      <td>unknown</td>
+      <td>GitHub private advisory</td>
+      <td>✅ Notified 2026-04-29</td>
+      <td>Acknowledged — known issue, seeking npm transfer</td>
+    </tr>
+    <tr style="background:#fff5f5;">
+      <td><strong>moonrepo</strong></td>
+      <td><span class="tag tag-b">B</span></td>
+      <td><code>moon</code> → <code>@moonrepo/cli</code></td>
+      <td>unknown</td>
+      <td>📧 Direct email</td>
+      <td>✅ Sent 2026-04-29</td>
+      <td>Awaiting</td>
+    </tr>
+
+    <!-- FLOW A -->
+    <tr style="background:#fffbf0;">
+      <td><strong>AWS</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>aws-sdk-client-s3</code> +5 → <code>@aws-sdk/client-*</code></td>
+      <td>n/a (unclaimed)</td>
+      <td>📧 Direct email</td>
+      <td>✅ Sent 2026-04-19 · clarified 2026-04-21</td>
+      <td>Closed 2026-05-07 — AWS Security: customer responsibility model, out of scope for AWS infrastructure</td>
+    </tr>
+    <tr style="background:#fffbf0;">
+      <td><strong>Stripe</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>stripe-js</code> → <code>@stripe/stripe-js</code></td>
+      <td>n/a (unclaimed)</td>
+      <td>📧 Direct email</td>
+      <td>✅ Sent 2026-04-19 · clarified 2026-04-21</td>
+      <td>Redirected to HackerOne · clarified not a bounty report</td>
+    </tr>
+    <tr style="background:#fffbf0;">
+      <td><strong>Prisma</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>prisma-client</code> → <code>@prisma/client</code></td>
+      <td>n/a (third party)</td>
+      <td><a href="https://github.com/prisma/prisma/issues/29492">#29492</a></td>
+      <td>✅ Sent 2026-04-20 · clarified + closed 2026-04-21</td>
+      <td>Closed</td>
+    </tr>
+    <tr style="background:#fffbf0;">
+      <td><strong>Supabase</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>supabase-js</code> → <code>@supabase/supabase-js</code></td>
+      <td>n/a (npm hold)</td>
+      <td><a href="https://github.com/supabase/supabase/issues/45032">#45032</a></td>
+      <td>✅ Sent 2026-04-20 · clarified + closed 2026-04-21</td>
+      <td>Closed · npm security hold already active</td>
+    </tr>
+    <tr style="background:#fffbf0;">
+      <td><strong>MUI</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>mui</code> → <code>@mui/material</code></td>
+      <td>n/a (third party)</td>
+      <td><a href="https://github.com/mui/material-ui/issues/48333">#48333</a></td>
+      <td>✅ Sent 2026-04-20 · clarified + closed 2026-04-21</td>
+      <td>Closed</td>
+    </tr>
+    <tr style="background:#fffbf0;">
+      <td><strong>tRPC</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>trpc</code> → <code>@trpc/server</code></td>
+      <td>n/a</td>
+      <td><a href="https://github.com/trpc/trpc/issues/7344">#7344</a></td>
+      <td>✅ Sent 2026-04-20 · clarified + closed 2026-04-21</td>
+      <td>Closed · phryneas noted Flow A only</td>
+    </tr>
+    <tr style="background:#fffbf0;">
+      <td><strong>Testing Library</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>testing-library</code> → <code>@testing-library/react</code></td>
+      <td>n/a</td>
+      <td><a href="https://github.com/testing-library/react-testing-library/issues/1459">#1459</a></td>
+      <td>✅ Sent 2026-04-20 · clarified + closed 2026-04-21</td>
+      <td>Issue closed · eps1lon contacted npm · namespace still under lortmann (3rd party, no change as of 2026-05-06)</td>
+    </tr>
+    <tr style="background:#fffbf0;">
+      <td><strong>Vue.js</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>vue-cli-service</code> → <code>@vue/cli-service</code></td>
+      <td>~287K (defensive squatter)</td>
+      <td><a href="https://github.com/vuejs/vue-cli/issues/7495">#7495</a></td>
+      <td>✅ Sent 2026-04-20 · clarified + closed 2026-04-21</td>
+      <td>Closed</td>
+    </tr>
+    <tr style="background:#fffbf0;">
+      <td><strong>NestJS</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>nestjs</code> → <code>@nestjs/core</code></td>
+      <td>n/a</td>
+      <td><a href="https://github.com/nestjs/nest/issues/16810">#16810</a></td>
+      <td>✅ Sent 2026-04-20</td>
+      <td>Closed ✅ — "Just got in touch with NPM"</td>
+    </tr>
+    <tr style="background:#fffbf0;">
+      <td><strong>TanStack</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>tanstack-router</code>, <code>tanstack-table</code>, <code>tanstack-form</code> (unclaimed) · <code>tanstack-query</code> (3rd party) → <code>@tanstack/*</code></td>
+      <td>n/a</td>
+      <td><a href="https://github.com/TanStack/router/issues/7232">#7232</a></td>
+      <td>✅ Sent 2026-04-21</td>
+      <td>Issue closed (no namespace action taken) — bare aliases still unclaimed as of 2026-05-06</td>
+    </tr>
+    <tr style="background:#e8f5e9;">
+      <td><strong>Clerk</strong></td>
+      <td><span class="tag tag-a">A</span></td>
+      <td><code>clerk-nextjs</code> → <code>@clerk/nextjs</code></td>
+      <td>n/a (placeholder)</td>
+      <td><a href="https://github.com/clerk/javascript/issues/8361">#8361</a></td>
+      <td>✅ Sent 2026-04-21</td>
+      <td>✅ Claimed 2026-04-30 — defensive placeholder published (npm security team)</td>
+    </tr>
+
+    <!-- RESEARCHERS -->
+    <tr style="background:#f0f7ff;">
+      <td><strong>Anthropic (HackerOne)</strong></td>
+      <td><span class="tag tag-info">INFO</span></td>
+      <td>Model safety — bare npx execution</td>
+      <td>—</td>
+      <td><a href="https://hackerone.com/reports/3682326">HN #3682326</a></td>
+      <td>✅ Filed 2026-04-18 · updated 2026-04-20</td>
+      <td>Closed Informative · escalated to model safety team · draft review provided</td>
+    </tr>
+    <tr style="background:#f0f7ff;">
+      <td><strong>npm abuse</strong></td>
+      <td><span class="tag tag-info">INFO</span></td>
+      <td><code>lhci</code> squatter report</td>
+      <td>—</td>
+      <td>📧 Direct email</td>
+      <td>✅ Sent 2026-04-19</td>
+      <td>Awaiting</td>
+    </tr>
+
+    <tr style="background:#f0f7ff;">
+      <td><strong>Prof. Jadliwala + Spracklen (UTSA)</strong></td>
+      <td><span class="tag tag-info">INFO</span></td>
+      <td>Academic coordination — slopsquatting dataset cross-ref</td>
+      <td>—</td>
+      <td>📧 Institutional email</td>
+      <td>✅ Sent 2026-04-21 · pre-pub review 2026-05-01</td>
+      <td>Responded ✅ — confirmed distinct from slopsquatting; dataset cross-check completed; Distinguished Paper Award acknowledged</td>
+    </tr>
+
+    <tr style="background:#f0f7ff;">
+      <td><strong>Replit</strong></td>
+      <td><span class="tag tag-info">INFO</span></td>
+      <td>Cross-tool AI verification — bare lhci confirmed</td>
+      <td>—</td>
+      <td>📧 Security email · in-app form</td>
+      <td>✅ Notified 2026-04-22 · security@ 2026-04-28</td>
+      <td>Acknowledged ✅ — confirmed finding + professional disclosure · H1 invite declined (Signal score &lt; 1.0 policy)</td>
+    </tr>
+    <tr style="background:#e8f5e9;">
+      <td><strong>Remix / React Router</strong></td>
+      <td><span class="tag tag-b">B</span></td>
+      <td><code>react-router-serve</code> → <code>react-router</code></td>
+      <td>n/a (placeholder)</td>
+      <td>GitHub private advisory GHSA-v8f8-m3rx-38qc</td>
+      <td>✅ Filed 2026-05-02</td>
+      <td>✅ RESOLVED — Matt Brophy: placeholder published, docs updated to guide agents to <code>@react-router</code></td>
+    </tr>
+    <tr style="background:#f0f7ff;">
+      <td><strong>Charlie E. (Aikido)</strong></td>
+      <td><span class="tag tag-info">INFO</span></td>
+      <td>Independent validation — researcher coordination</td>
+      <td>—</td>
+      <td>LinkedIn DM</td>
+      <td>🟡 Connect request sent 2026-04-19</td>
+      <td>Awaiting accept</td>
+    </tr>
+    <tr style="background:#f0f7ff;">
+      <td><strong>Andrew N.</strong></td>
+      <td><span class="tag tag-info">INFO</span></td>
+      <td>Libraries.io ecosystem signal</td>
+      <td>—</td>
+      <td>📧 Direct email</td>
+      <td>✅ Sent 2026-04-21</td>
+      <td>Awaiting</td>
+    </tr>
+  </tbody>
+  </table>
+</div>
+
+</body>
+</html>

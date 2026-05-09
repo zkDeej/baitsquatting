@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSQT-2026-001 — Baitsquatting Disclosure Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #12151a;
+    --bg3: #1a1e26;
+    --border: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #e8eaf0;
+    --text-muted: #6b7280;
+    --text-dim: #374151;
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.1);
+    --red-border: rgba(239,68,68,0.25);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245,158,11,0.1);
+    --amber-border: rgba(245,158,11,0.25);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.1);
+    --blue-border: rgba(59,130,246,0.25);
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.1);
+    --green-border: rgba(34,197,94,0.25);
+    --purple: #a855f7;
+    --purple-bg: rgba(168,85,247,0.1);
+    --purple-border: rgba(168,85,247,0.25);
+    --gray-bg: rgba(255,255,255,0.04);
+    --font-mono: 'DM Mono', monospace;
+    --font-sans: 'DM Sans', sans-serif;
+    --r: 6px;
+    --r-lg: 10px;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  .header { border-bottom: 1px solid var(--border); padding: 20px 28px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .ref-badge { font-family: var(--font-mono); font-size: 11px; color: var(--red); background: var(--red-bg); border: 1px solid var(--red-border); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; letter-spacing: 0.05em; }
+  h1 { font-size: 20px; font-weight: 500; color: var(--text); letter-spacing: -0.3px; }
+  .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding-top: 4px; }
+  .clock { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+  .publish-badge { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 4px; background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); font-family: var(--font-mono); }
+
+  .stats-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-bottom: 1px solid var(--border); }
+  .stat { padding: 14px 20px; border-right: 1px solid var(--border); }
+  .stat:last-child { border-right: none; }
+  .stat-val { font-size: 26px; font-weight: 500; font-family: var(--font-mono); line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .main { padding: 20px 28px; }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+  .filter-row { display: flex; gap: 6px; }
+  .filter-btn { font-size: 11px; padding: 3px 10px; border-radius: 4px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); cursor: pointer; font-family: var(--font-sans); transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { background: var(--bg3); color: var(--text); border-color: var(--border-strong); }
+
+  .pkg-grid { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 24px; }
+  .pkg-row { display: grid; grid-template-columns: 220px 160px 120px 120px 120px 1fr; gap: 0; background: var(--bg2); transition: background 0.1s; }
+  .pkg-row:hover { background: var(--bg3); }
+  .pkg-row.header-row { background: var(--bg3); pointer-events: none; }
+  .pkg-cell { padding: 10px 14px; border-right: 1px solid var(--border); display: flex; align-items: center; overflow: hidden; }
+  .pkg-cell:last-child { border-right: none; }
+  .col-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+  .pkg-name { font-family: var(--font-mono); font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pkg-bare { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-right: 7px; }
+  .status-text { font-size: 11px; font-weight: 500; }
+
+  .s-live    { --sc: var(--red);    --sbg: var(--red-bg);    --sbr: var(--red-border); }
+  .s-unclaim { --sc: var(--blue);   --sbg: var(--blue-bg);   --sbr: var(--blue-border); }
+  .s-third   { --sc: var(--amber);  --sbg: var(--amber-bg);  --sbr: var(--amber-border); }
+  .s-def     { --sc: var(--purple); --sbg: var(--purple-bg); --sbr: var(--purple-border); }
+  .s-safe    { --sc: var(--green);  --sbg: var(--green-bg);  --sbr: var(--green-border); }
+  .s-hold    { --sc: #9ca3af;       --sbg: rgba(156,163,175,0.1); --sbr: rgba(156,163,175,0.25); }
+
+  .status-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px; background: var(--sbg); border: 1px solid var(--sbr); color: var(--sc); white-space: nowrap; }
+  .status-badge .status-dot { background: var(--sc); margin-right: 0; }
+
+  .cred-pill { font-size: 10px; padding: 2px 7px; border-radius: 3px; font-weight: 500; white-space: nowrap; }
+  .cred-extreme { background: rgba(239,68,68,0.15); color: #f87171; }
+  .cred-high    { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .cred-medium  { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .cred-low     { background: rgba(156,163,175,0.12); color: #9ca3af; }
+
+  .disclosure-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .disc-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px 16px; }
+  .disc-card-title { font-size: 12px; font-weight: 500; margin-bottom: 10px; color: var(--text); }
+  .disc-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+  .disc-item:last-child { border-bottom: none; }
+  .disc-target { font-size: 12px; color: var(--text); }
+  .disc-channel { font-size: 11px; color: var(--text-muted); }
+  .disc-status { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; }
+  .ds-closed  { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border); }
+  .ds-await   { background: var(--amber-bg);  color: var(--amber);  border: 1px solid var(--amber-border); }
+  .ds-pending { background: var(--blue-bg);   color: var(--blue);   border: 1px solid var(--blue-border); }
+  .ds-sched   { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+  .ds-done    { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
+
+  .published-block { background: var(--green-bg); border: 1px solid var(--green-border); border-radius: var(--r-lg); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .published-label { font-size: 12px; color: var(--green); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+  .published-val { font-family: var(--font-mono); font-size: 24px; font-weight: 500; color: var(--green); }
+  .pub-date { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); }
+
+  .repo-block { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px 18px; margin-bottom: 20px; }
+  .repo-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+  .repo-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .repo-item:last-child { border-bottom: none; }
+  .repo-icon { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); width: 16px; flex-shrink: 0; }
+  .repo-path { font-family: var(--font-mono); color: var(--blue); }
+  .repo-desc { color: var(--text-muted); }
+
+  .footer { border-top: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
+  .footer a { color: var(--text-muted); text-decoration: none; }
+  .footer a:hover { color: var(--text); }
+
+  .dl-val { font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); }
+
+  .live-dot { width: 6px; height: 6px; background: var(--red); border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="ref-badge">BSQT-2026-001</div>
+    <h1>Baitsquatting — coordinated disclosure tracker</h1>
+    <div class="sub">
+      <span class="live-dot"></span>
+      Researcher: Dhananjayan Maniraj (DJ) &nbsp;·&nbsp; discovered 2026-04-18 &nbsp;·&nbsp;
+      <a href="https://hackerone.com/reports/3682326" style="color:inherit;text-decoration:underline;text-underline-offset:2px;">HackerOne #3682326</a> &nbsp;·&nbsp;
+      <a href="https://gist.github.com/zkDeej/ebc290ca7fc5240e6fd4032ede24f1eb" style="color:inherit;text-decoration:underline;text-underline-offset:2px;">/npm-trust-check</a> &nbsp;·&nbsp;
+      <a href="https://gist.github.com/zkDeej/f4dc6bc45011eddbcc3e268032ad7edf" style="color:inherit;text-decoration:underline;text-underline-offset:2px;">/sbom-generate</a> &nbsp;·&nbsp;
+      <a href="diagrams.html" style="color:inherit;text-decoration:underline;text-underline-offset:2px;">Visual summary &amp; attack flows</a> &nbsp;·&nbsp;
+      <a href="FAQ.html" style="color:inherit;text-decoration:underline;text-underline-offset:2px;">FAQ</a>
+    </div>
+    <div class="sub" style="margin-top:4px; font-style:italic;">Living document — vendor response tracking updated as cases resolve.</div>
+  </div>
+  <div class="header-right">
+    <div class="clock" id="clock">--:--:-- UTC</div>
+    <div class="publish-badge" style="background:var(--green-bg);color:var(--green);border-color:var(--green-border);">PUBLISHED</div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-val" style="color:var(--red)">1</div>
+    <div class="stat-label">Live squatter</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" style="color:var(--blue)">3+</div>
+    <div class="stat-label">Unclaimed</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" style="color:var(--amber)">9</div>
+    <div class="stat-label">3rd party</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" style="color:var(--green)">6</div>
+    <div class="stat-label">Claimed / safe</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" style="color:var(--text-muted)">18+</div>
+    <div class="stat-label">Vendors notified</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="published-block">
+    <div>
+      <div class="published-label">✅ Published</div>
+      <div class="published-val">2026-05-08</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Coordinated disclosure complete · 3 weeks · 18+ vendors · 3 research teams — published 2026-05-08</div>
+    </div>
+    <div style="text-align:right">
+      <div class="pub-date">github.com/zkDeej/baitsquatting</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Hacker News · LinkedIn · Security community</div>
+    </div>
+  </div>
+
+  <div class="section-header" style="margin-bottom:10px;">
+    <div class="section-title">Package inventory — sampled cases</div>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterPkgs('all',this)">All</button>
+      <button class="filter-btn" onclick="filterPkgs('live',this)">Live</button>
+      <button class="filter-btn" onclick="filterPkgs('unclaim',this)">Unclaimed</button>
+      <button class="filter-btn" onclick="filterPkgs('third',this)">3rd party</button>
+      <button class="filter-btn" onclick="filterPkgs('safe',this)">Claimed / safe</button>
+    </div>
+  </div>
+
+  <div class="pkg-grid" id="pkg-grid">
+    <div class="pkg-row header-row">
+      <div class="pkg-cell"><span class="col-label">Scoped package</span></div>
+      <div class="pkg-cell"><span class="col-label">Bare alias</span></div>
+      <div class="pkg-cell"><span class="col-label">Status</span></div>
+      <div class="pkg-cell"><span class="col-label">Downloads</span></div>
+      <div class="pkg-cell"><span class="col-label">Credential risk</span></div>
+      <div class="pkg-cell"><span class="col-label">Owner / outcome</span></div>
+    </div>
+  </div>
+
+  <div class="disclosure-grid">
+    <div class="disc-card">
+      <div class="disc-card-title">Vendor disclosures</div>
+      <div class="disc-item">
+        <div><div class="disc-target">Anthropic — HackerOne</div><div class="disc-channel">VDP #3682326 · Critical (CVSS 9.0)</div></div>
+        <span class="disc-status ds-closed">Closed informative</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Anthropic — model safety</div><div class="disc-channel">Direct email · draft review provided</div></div>
+        <span class="disc-status ds-await">Awaiting</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">GoogleChrome / lighthouse-ci</div><div class="disc-channel">GitHub issue #1138 · pre-read sent 2026-05-01</div></div>
+        <span class="disc-status ds-await">No namespace claim yet</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">npm registry</div><div class="disc-channel">Ticket #4300558 · lhci squatter report</div></div>
+        <span class="disc-status ds-await">No resolution</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Remix / React Router</div><div class="disc-channel">GHSA-v8f8-m3rx-38qc · react-router-serve</div></div>
+        <span class="disc-status ds-done">✅ Claimed · docs update committed</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Clerk</div><div class="disc-channel">GitHub issue #8361 · clerk-nextjs</div></div>
+        <span class="disc-status ds-done">✅ Claimed 2026-04-30 · npm security team · placeholder live</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">NestJS</div><div class="disc-channel">GitHub issue #16810 · nestjs namespace</div></div>
+        <span class="disc-status ds-done">✅ nestjs-cli claimed · nestjs transfer in progress</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Biome</div><div class="disc-channel">GHSA-9q5c-56hg-qcj5 · biome namespace</div></div>
+        <span class="disc-status ds-await">Acknowledged · seeking npm transfer</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Replit</div><div class="disc-channel">Security email · agent reproduced bare invocation · H1 Signal &lt;1.0 policy</div></div>
+        <span class="disc-status ds-closed">Acknowledged · declined on process</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Vendors under active disclosure</div><div class="disc-channel">Details withheld pending resolution</div></div>
+        <span class="disc-status ds-pending">Active window</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Stripe / OpenAI / AWS / Prisma / Supabase</div><div class="disc-channel">Security email / VDP · Flow A · AWS closed (customer responsibility)</div></div>
+        <span class="disc-status ds-done">All notified</span>
+      </div>
+    </div>
+    <div class="disc-card">
+      <div class="disc-card-title">Research coordination</div>
+      <div class="disc-item">
+        <div><div class="disc-target">Murtuza Jadliwala + Joe Spracklen (UTSA)</div><div class="disc-channel">Spracklen et al. — USENIX Security 2025 Distinguished Paper</div></div>
+        <span class="disc-status ds-done">Dataset cross-check complete</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Anupam Singh (AnupamAS01)</div><div class="disc-channel">Phase 2 co-researcher · 170 orgs / 7K repos scanned</div></div>
+        <span class="disc-status ds-done">5 new collisions found</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Charlie E. — Aikido Security</div><div class="disc-channel">LinkedIn connect</div></div>
+        <span class="disc-status ds-await">Awaiting</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target">Hacker News — Show HN</div><div class="disc-channel">Full writeup · 2026-05-08 · account restriction</div></div>
+        <span class="disc-status ds-amber">Pending</span>
+      </div>
+      <div class="disc-item">
+        <div><div class="disc-target"><a href="https://www.linkedin.com/posts/activity-7458587390626910208-Mnbv?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAENfqEB9zbknmRozVhv2od0NywPt6-LNgg" target="_blank" style="color:inherit">LinkedIn post ↗</a></div><div class="disc-channel">Public narrative · 2026-05-08</div></div>
+        <span class="disc-status ds-done">Posted</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="repo-block">
+    <div class="repo-title">Repository — github.com/zkDeej/baitsquatting</div>
+    <div class="repo-item"><span class="repo-icon">📄</span><span class="repo-path">README.md</span><span class="repo-desc">full writeup · incident · taxonomy · cross-tool verification · findings</span></div>
+    <div class="repo-item"><span class="repo-icon">📁</span><span class="repo-path">data/</span><span class="repo-desc">registry snapshots · UTSA cross-check results</span></div>
+    <div class="repo-item"><span class="repo-icon">🌐</span><span class="repo-path">index.html</span><span class="repo-desc">this live disclosure tracker · GitHub Pages</span></div>
+    <div class="repo-item"><span class="repo-icon">🔧</span><span class="repo-path">tools/npm-trust-check.md</span><span class="repo-desc">Claude Code slash command · gist.github.com/zkDeej/…</span></div>
+    <div class="repo-item"><span class="repo-icon">🔧</span><span class="repo-path">tools/sbom-generate.md</span><span class="repo-desc">Claude Code slash command · generate CycloneDX SBOM · gist.github.com/zkDeej/…</span></div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <div>BSQT-2026-001 &nbsp;·&nbsp; Dhananjayan Maniraj &nbsp;·&nbsp; <a href="https://github.com/zkDeej">github.com/zkDeej</a></div>
+  <div>Community tools: <a href="https://gist.github.com/zkDeej/ebc290ca7fc5240e6fd4032ede24f1eb">/npm-trust-check</a> &nbsp;·&nbsp; <a href="https://gist.github.com/zkDeej/f4dc6bc45011eddbcc3e268032ad7edf">/sbom-generate</a> &nbsp;·&nbsp; HackerOne: <a href="https://hackerone.com/reports/3682326">#3682326</a></div>
+</div>
+
+<script>
+const PACKAGES = [
+  // Flow B — confirmed execution-time vectors
+  {scoped:'@lhci/cli',              bare:'lhci',              status:'live',   dl:'~3,200/wk (Apr 2026)', cred:'high',   credLabel:'CI secrets + env',    owner:'AnupamAS01 (researcher PoC) — LIVE INCIDENT', flow:'B'},
+  {scoped:'@changesets/cli',        bare:'changeset',         status:'third',  dl:'~1.5M/wk',             cred:'extreme',credLabel:'npm publish tokens',   owner:'eugeneware (abandoned ~5yrs) — notified',     flow:'B'},
+  {scoped:'dependency-cruiser',     bare:'depcruise',         status:'def',    dl:'~300K/wk',             cred:'medium', credLabel:'Dev environment',     owner:'Aikido Security (debugducky) — defensive hold', flow:'B'},
+  {scoped:'@biomejs/biome',         bare:'biome',             status:'third',  dl:'Millions/wk',          cred:'medium', credLabel:'Build tool',          owner:'1egoman (abandoned 2016) — acknowledged, seeking transfer', flow:'B'},
+  {scoped:'@moonrepo/cli',          bare:'moon',              status:'third',  dl:'~100K/wk',             cred:'medium', credLabel:'CI secrets',          owner:'kabir (abandoned 2020) — moonrepo notified',  flow:'B'},
+  // Phase 1 survey — Flow A + mixed
+  {scoped:'@aws-sdk/client-s3',     bare:'aws-sdk-client-s3', status:'unclaim',dl:'500M+',               cred:'extreme',credLabel:'AWS keys',            owner:'Unclaimed (6 variants)',                    flow:'A'},
+  {scoped:'@stripe/stripe-js',      bare:'stripe-js',         status:'unclaim',dl:'~2M/wk',              cred:'extreme',credLabel:'Payment keys',         owner:'Unclaimed',                    flow:'A'},
+  {scoped:'@openai/openai',         bare:'openai-sdk',        status:'unclaim',dl:'~5M/wk',              cred:'extreme',credLabel:'OpenAI API key',       owner:'Unclaimed',                     flow:'A'},
+  {scoped:'@prisma/client',         bare:'prisma-client',     status:'third',  dl:'~5M/wk',              cred:'high',   credLabel:'DB credentials',      owner:'timsuchanek (ex-Prisma) — notified',          flow:'A'},
+  {scoped:'@supabase/supabase-js',  bare:'supabase-js',       status:'hold',   dl:'~1M+/wk',             cred:'high',   credLabel:'Service role key',    owner:'npm security hold (Jan 2026) — notified',     flow:'A'},
+  {scoped:'@nestjs/core',           bare:'nestjs',            status:'third',  dl:'~3M/wk',              cred:'medium', credLabel:'App secrets',         owner:'quangv (unaffiliated) — transfer in progress', flow:'A'},
+  {scoped:'@nestjs/cli',            bare:'nestjs-cli',        status:'safe',   dl:'~1M/wk',              cred:'medium', credLabel:'App secrets',         owner:'✅ Defensive placeholder claimed',             flow:'A'},
+  {scoped:'@clerk/nextjs',          bare:'clerk-nextjs',      status:'safe',   dl:'~500K/wk',            cred:'high',   credLabel:'Auth secrets',        owner:'✅ Clerk claimed silently — placeholder live', flow:'A'},
+  {scoped:'@react-router/serve',    bare:'react-router-serve', status:'safe',  dl:'~785K/wk',            cred:'medium', credLabel:'App secrets',         owner:'✅ Remix claimed — docs update committed',    flow:'B'},
+  {scoped:'@vitejs/plugin-react',   bare:'vite-plugin-react', status:'third',  dl:'~8M/wk',              cred:'low',    credLabel:'Build tool',          owner:'yyx990803 (Evan You) — informed',             flow:'A'},
+  {scoped:'@tanstack/react-query',  bare:'react-query',       status:'safe',   dl:'~9M/wk',              cred:'low',    credLabel:'Client state',        owner:'tannerlinsley / tkdodo — tool-owned',         flow:'A'},
+  {scoped:'@testing-library/react', bare:'testing-library',   status:'third',  dl:'~12M/wk',             cred:'low',    credLabel:'Test env',            owner:'lortmann (unaffiliated) — unresolved',        flow:'A'},
+  {scoped:'@mui/material',          bare:'mui',               status:'third',  dl:'~4M/wk',              cred:'low',    credLabel:'UI library',          owner:'chedwick (unaffiliated) — notified',          flow:'A'},
+  {scoped:'@apollo/client',         bare:'apollo-client',     status:'safe',   dl:'~2M/wk',              cred:'medium', credLabel:'GraphQL tokens',      owner:'apollo-bot (official)',                       flow:'A'},
+  {scoped:'@trpc/server',           bare:'trpc',              status:'third',  dl:'~1M/wk',              cred:'medium', credLabel:'App secrets',         owner:'vriad (personal) — notified',                flow:'A'},
+  {scoped:'@remix-run/node',        bare:'remix',             status:'safe',   dl:'~2M/wk',              cred:'medium', credLabel:'App secrets',         owner:'mjackson (official)',                         flow:'A'},
+  {scoped:'@reduxjs/toolkit',       bare:'redux-toolkit',     status:'third',  dl:'~10M/wk',             cred:'low',    credLabel:'Client state',        owner:'yeatz (unaffiliated) — notified',             flow:'A'},
+  {scoped:'@angular/cli',           bare:'angular-cli',       status:'safe',   dl:'~3M/wk',              cred:'low',    credLabel:'Build tool',          owner:'angular org (official)',                      flow:'A'},
+  {scoped:'@sentry/node',           bare:'sentry-node',       status:'third',  dl:'~3M/wk',              cred:'medium', credLabel:'DSN / tokens',        owner:'Clever Engineering (legitimate) — closed',    flow:'A'},
+  {scoped:'@vue/cli-service',       bare:'vue-cli-service',   status:'def',    dl:'~287K/wk',            cred:'medium', credLabel:'Build secrets',       owner:'alxndrsn — defensive squat — notified',       flow:'A'},
+];
+
+const STATUS_META = {
+  live:    {label:'Live squatter',   cls:'s-live'},
+  unclaim: {label:'Unclaimed',       cls:'s-unclaim'},
+  third:   {label:'3rd party',       cls:'s-third'},
+  def:     {label:'Defensive squat', cls:'s-def'},
+  safe:    {label:'Claimed / safe',  cls:'s-safe'},
+  hold:    {label:'Security hold',   cls:'s-hold'},
+  closed:  {label:'Closed · no action', cls:'s-safe'},
+};
+const CRED_CLS = {extreme:'cred-extreme', high:'cred-high', medium:'cred-medium', low:'cred-low'};
+
+let currentFilter = 'all';
+
+function renderGrid(filter) {
+  const grid = document.getElementById('pkg-grid');
+  const header = grid.querySelector('.header-row');
+  grid.innerHTML = '';
+  grid.appendChild(header);
+
+  const filtered = PACKAGES.filter(p => {
+    if (filter === 'all') return true;
+    if (filter === 'live') return p.status === 'live';
+    if (filter === 'unclaim') return p.status === 'unclaim';
+    if (filter === 'third') return p.status === 'third' || p.status === 'def';
+    if (filter === 'safe') return p.status === 'safe';
+    return true;
+  });
+
+  filtered.forEach(p => {
+    const sm = STATUS_META[p.status];
+    const row = document.createElement('div');
+    row.className = 'pkg-row';
+    row.dataset.status = p.status;
+    row.innerHTML = `
+      <div class="pkg-cell"><span class="pkg-name">${p.scoped}</span></div>
+      <div class="pkg-cell"><span class="pkg-bare">${p.bare}</span></div>
+      <div class="pkg-cell">
+        <span class="status-badge ${sm.cls}">
+          <span class="status-dot"></span>${sm.label}
+        </span>
+      </div>
+      <div class="pkg-cell"><span class="dl-val">${p.dl}</span></div>
+      <div class="pkg-cell"><span class="cred-pill ${CRED_CLS[p.cred]}">${p.credLabel}</span></div>
+      <div class="pkg-cell" style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.owner}</div>`;
+    grid.appendChild(row);
+  });
+}
+
+function filterPkgs(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid(f);
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toUTCString().slice(17,25) + ' UTC';
+}
+
+renderGrid('all');
+updateClock();
+setInterval(updateClock, 30000);
+</script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 

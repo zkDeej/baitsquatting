@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; max-width: 860px; margin: 40px auto; color: #222; }
+  h1 { font-size: 22px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+  h2 { font-size: 16px; color: #444; margin-top: 32px; }
+  details { border: 1px solid #ddd; border-radius: 6px; margin: 10px 0; padding: 0; }
+  summary { font-weight: bold; padding: 12px 16px; cursor: pointer; background: #f7f7f7; border-radius: 6px; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▶ "; font-size: 11px; color: #888; }
+  details[open] summary::before { content: "▼ "; }
+  details[open] summary { border-bottom: 1px solid #ddd; border-radius: 6px 6px 0 0; }
+  .answer { padding: 14px 16px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th { background: #f2f2f2; text-align: left; padding: 8px 10px; }
+  td { padding: 8px 10px; border: 1px solid #ddd; vertical-align: top; }
+  code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 13px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: bold; padding: 2px 7px; border-radius: 10px; margin-right: 4px; }
+  .tag-b { background: #ffe0e0; color: #c00; }
+  .tag-a { background: #fff3cd; color: #856404; }
+  .tag-info { background: #e0f0ff; color: #004a8f; }
+</style>
+</head>
+<body>
+
+<h1>BSQT-2026-001 — Baitsquatting FAQ</h1>
+<p style="color:#666; font-size:13px;">Last updated: 2026-05-08 · Researcher: Dhananjayan Maniraj (DJ) · <a href="https://github.com/zkDeej">github.com/zkDeej</a></p>
+<p style="font-size:13px; margin-top:8px;">
+  <a href="index.html">← Live tracker</a> &nbsp;·&nbsp;
+  <a href="diagrams.html">Visual summary &amp; attack flows →</a>
+</p>
+<p style="color:#888; font-size:12px; margin-top:6px; font-style:italic;">Living document — vendor response tracking and namespace claim status updated as they resolve.</p>
+
+<h2>The Basics</h2>
+
+<details open>
+<summary>What is baitsquatting?</summary>
+<div class="answer">
+An attacker registers the intuitive bare-name alias of a scoped npm CLI tool, then waits for AI coding agents to recommend it at scale. No hallucination required — the AI follows the tool's own documentation.
+<br><br>
+<table>
+<tr><th>Attack class</th><th>How the wrong name arises</th><th>AI role</th></tr>
+<tr><td><strong>Typosquatting</strong></td><td>Human typing error</td><td>None</td></tr>
+<tr><td><strong>Slopsquatting</strong></td><td>AI hallucinates a non-existent name</td><td>Primary cause</td></tr>
+<tr><td><strong>Baitsquatting</strong></td><td>AI recommends the bare alias the tool's own docs teach</td><td>Amplifier + distributor</td></tr>
+</table>
+</div>
+</details>
+
+<details>
+<summary>What actually happened — the live incident?</summary>
+<div class="answer">
+<table>
+<tr><th>What</th><th>Detail</th></tr>
+<tr><td>Date</td><td>2026-04-18</td></tr>
+<tr><td>Agent</td><td>Claude Code (claude-sonnet-4-6) in agentic mode</td></tr>
+<tr><td>Command executed</td><td><code>npx lhci autorun</code></td></tr>
+<tr><td>Package downloaded</td><td><code>lhci@4.1.1</code> — owner: AnupamAS01 (not GoogleChrome). Researcher PoC; v4.1.2 published 2026-05-08.</td></tr>
+<tr><td>Output</td><td>"Hello, this is AnupamAS01!" — PoC researcher package, not malicious exfiltration</td></tr>
+<tr><td>Credentials at risk</td><td>Supabase service role key, Sentry DSN, PostHog key (all rotated)</td></tr>
+<tr><td>Anthropic response</td><td>HackerOne #3682326 — closed Informative. Permission prompt showed exact command.</td></tr>
+</table>
+</div>
+</details>
+
+<details>
+<summary>Why didn't the permission prompt protect me?</summary>
+<div class="answer">
+It did — for a developer. The prompt showed the exact command: <code>npx lhci autorun</code>. A developer would recognise that <code>lhci</code> is not <code>@lhci/cli</code>.<br><br>
+The gap is that Claude Code is actively marketed to non-developer users ("vibe coders") who have no way to evaluate a bare npm package name at the moment of execution. The control was designed for developer judgment — it was not designed for delegated trust.
+</div>
+</details>
+
+<h2>Scope &amp; Severity</h2>
+
+<details>
+<summary>How broad is the attack surface?</summary>
+<div class="answer">
+After testing 45 packages: <strong>specific, not broad.</strong> Most popular CLI tools own their bare npm namespaces. The gap only exists when all four conditions are true:
+<br><br>
+<table>
+<tr><th>#</th><th>Condition</th><th>Example</th></tr>
+<tr><td>1</td><td>Tool migrated to scoped packaging</td><td><code>@lhci/cli</code></td></tr>
+<tr><td>2</td><td>CLI binary kept the bare name</td><td>binary: <code>lhci</code></td></tr>
+<tr><td>3</td><td>Docs teach bare invocation as primary pattern</td><td><code>npx lhci autorun</code></td></tr>
+<tr><td>4</td><td>Bare npm namespace unclaimed or held by third party</td><td><code>lhci</code> → AnupamAS01</td></tr>
+</table>
+<br>
+Tools like <code>eslint</code>, <code>prettier</code>, <code>vercel</code>, <code>turbo</code>, <code>firebase-tools</code> own their bare npm names — no gap.
+</div>
+</details>
+
+<details>
+<summary>What's the difference between Flow A and Flow B?</summary>
+<div class="answer">
+<table>
+<tr><th></th><th><span class="tag tag-b">Flow B</span> Execution-time</th><th><span class="tag tag-a">Flow A</span> Install-time</th></tr>
+<tr><td>Trigger</td><td><code>npx &lt;bare-name&gt;</code> in shell</td><td><code>npm install &lt;bare-name&gt;</code></td></tr>
+<tr><td>Env exposure</td><td>Full shell (all secrets)</td><td>Install scripts only</td></tr>
+<tr><td>Audit trail</td><td>None</td><td>package.json + lockfile</td></tr>
+<tr><td>Live incident?</td><td>✅ Yes — lhci</td><td>❌ No confirmed incident</td></tr>
+<tr><td>Severity</td><td>Critical / High</td><td>Medium / Low</td></tr>
+<tr><td>Confirmed cases</td><td>lhci, changeset, depcruise</td><td>aws-sdk-client-*, stripe-js, prisma-client, supabase-js</td></tr>
+</table>
+</div>
+</details>
+
+<details>
+<summary>What are the sampled cases?</summary>
+<div class="answer">
+<table>
+<tr><th>Flow</th><th>Real package</th><th>Bare alias</th><th>Namespace status</th><th>Risk</th></tr>
+<tr><td><span class="tag tag-b">B</span></td><td><code>@lhci/cli</code></td><td><code>lhci</code></td><td>AnupamAS01 (PoC researcher)</td><td>CI secrets, env at runtime — <strong>LIVE INCIDENT</strong></td></tr>
+<tr><td><span class="tag tag-b">B</span></td><td><code>@changesets/cli</code></td><td><code>changeset</code></td><td>eugeneware (abandoned library, ~5yrs old)</td><td>npm publish tokens, GitHub tokens in CI</td></tr>
+<tr><td><span class="tag tag-b">B</span></td><td><code>dependency-cruiser</code></td><td><code>depcruise</code></td><td>✅ Defensively claimed by Aikido Security</td><td>Mitigated — placeholder in place</td></tr>
+<tr><td><span class="tag tag-a">A</span></td><td><code>@aws-sdk/client-*</code></td><td><code>aws-sdk-client-s3</code> etc</td><td>Unclaimed (6 variants)</td><td>AWS credentials — highest blast radius</td></tr>
+<tr><td><span class="tag tag-a">A</span></td><td><code>@stripe/stripe-js</code></td><td><code>stripe-js</code></td><td>Unclaimed</td><td>Stripe publishable + secret keys</td></tr>
+<tr><td><span class="tag tag-a">A</span></td><td><code>@prisma/client</code></td><td><code>prisma-client</code></td><td>Third party (timsuchanek)</td><td>DB connection strings</td></tr>
+<tr><td><span class="tag tag-a">A</span></td><td><code>@supabase/supabase-js</code></td><td><code>supabase-js</code></td><td>npm security hold (Jan 2026)</td><td>Service role keys</td></tr>
+</table>
+<p style="font-size:12px; color:#666; margin-top:8px;"><strong>Verification method:</strong> Each case was sampled based on four structural criteria using npm registry data, official documentation, and binary/bare name inspection — not individual exploit testing. Flow B cases additionally have AI agent behavioural confirmation (live or cold probe). "Sampled" because the structural gap exists and an AI agent would predictably exploit it, not that malicious exploitation has been observed (except lhci, which is the live incident).</p>
+<p style="font-size:12px; color:#888; margin-top:6px;"><strong>Note on Flow A cases:</strong> These tools' documentation teaches the fully scoped name throughout — no bare invocation is taught. Exploitation would require a model to drop the scope prefix, which is a model output error rather than doc-following behaviour. No live AI output generating these bare install names has been observed. This places them closer to slopsquatting than baitsquatting. The namespace gaps are real and all teams were notified, but they are listed here for completeness rather than as confirmed baitsquatting cases.</p>
+</div>
+</details>
+
+<h2>Responsibilities</h2>
+
+<details>
+<summary>Is this the AI's fault?</summary>
+<div class="answer">
+For the confirmed Flow B cases — no. That's precisely what makes baitsquatting interesting. Claude Code is <em>not</em> making an error. It recommends the scoped form (<code>npx @sentry/cli</code>, <code>npx @biomejs/biome</code>) for tools whose docs use the scoped form. It recommends the bare form only where the tool's own documentation teaches it. The adjacent Flow A cases are different — those would require the model to drop a scope prefix the docs teach correctly, which would be a model error. Slopsquatting subset. No such output has been observed; those cases are reported for completeness.<br><br>
+Responsibility sits at four levels:
+<table>
+<tr><th>Party</th><th>Responsibility</th></tr>
+<tr><td>Tool maintainer</td><td>Primary — created and perpetuated the namespace gap by not claiming the bare alias</td></tr>
+<tr><td>AI platform</td><td>Secondary — permission prompt designed for developer judgment; deployed to non-developer and agentic users who cannot evaluate bare package names at the point of execution</td></tr>
+<tr><td>npm registry</td><td>Tertiary — no proactive detection of binary name / namespace collisions between scoped packages and bare aliases</td></tr>
+<tr><td>Developer / vibe coder</td><td>Shared — verify namespace ownership before approving AI-proposed bare <code>npx</code> commands; use scoped names in CI configs and agent instructions; do not delegate trust without tooling to back it</td></tr>
+</table>
+</div>
+</details>
+
+<details>
+<summary>Didn't some maintainers call this spam?</summary>
+<div class="answer">
+Yes — and the criticism had two legitimate dimensions worth separating.<br><br>
+First, the spam flag itself: several issues were filed in rapid succession across multiple repositories. This was assisted by AI tooling (Cowork) used to coordinate simultaneous outreach — a pattern that looks automated to a maintainer receiving it, regardless of intent. That's a fair observation about the process.<br><br>
+Second, the urgency framing: Flow A library packages (MUI, Redux, tRPC, Testing Library) received public GitHub issues implying urgency equivalent to the live incident. Those teams correctly pushed back — they can't unilaterally claim namespaces, and their packages have no npx execution path. Public issues were the wrong channel for Flow A library packages. All were subsequently updated with a scope clarification and closed.<br><br>
+What's worth noting separately: several maintainers had already identified the same risk and taken mitigating action before this outreach reached them. Clerk claimed <code>clerk-nextjs</code> silently. Aikido Security had claimed <code>depcruise</code> as a defensive placeholder in July 2025. The Biome team had been actively seeking an npm transfer for <code>biome</code> for some time. npm itself placed a security hold on <code>supabase-js</code> in January 2026 — before this research began. This is independent corroboration that the risk is real and recognised — not something that needed a researcher to surface it.
+</div>
+</details>
+
+<h2>What To Do</h2>
+
+<details>
+<summary>I'm a tool maintainer — should I be worried?</summary>
+<div class="answer">
+Check these four conditions. If all are true, you have a Flow B gap:
+<ol>
+<li>Your package is scoped (e.g. <code>@org/cli</code>)</li>
+<li>Your CLI binary has a bare name (e.g. <code>mycli</code>)</li>
+<li>Your docs teach <code>npx mycli</code> as the primary invocation</li>
+<li>The bare <code>mycli</code> npm namespace is unclaimed or held by an unrelated party</li>
+</ol>
+If only some conditions apply → likely Flow A only (lower severity).<br>
+If none apply → you're probably fine.
+</div>
+</details>
+
+<details>
+<summary>What's the systemic fix?</summary>
+<div class="answer">
+<p>Three independent parties need to act. The highest-leverage single change is at the registry layer — it scales to every current and future case without requiring individual tool maintainers to act first.</p>
+<table>
+<tr><th>Layer</th><th>Fix</th><th>Who</th><th>Leverage</th></tr>
+<tr><td><strong>npm registry</strong> ★</td><td>Detect: scoped package binary name ≠ registered bare namespace → alert maintainer proactively. One engineering change closes the structural gap across the entire registry.</td><td>npm</td><td>High — scales to all current and future cases</td></tr>
+<tr><td><strong>AI platform</strong></td><td>Pre-execution registry check: before proposing <code>npx X</code>, resolve X — verify publisher matches known maintainer or scoped equivalent has substantially higher downloads.</td><td>Anthropic, Replit, Microsoft, Google, OpenAI</td><td>High — protects users without requiring maintainer action</td></tr>
+<tr><td><strong>Tool maintainer</strong></td><td>Claim the bare namespace. Publish a placeholder that redirects to the scoped package. Takes 10 minutes. NestJS, Clerk, and React Router all did this within 24 hours of notification.</td><td>Individual maintainers</td><td>Medium — fixes the specific gap but doesn't scale</td></tr>
+</table>
+</div>
+</details>
+
+<details>
+<summary>I'm a developer — how do I protect myself?</summary>
+<div class="answer">
+<ol>
+<li>Always use the fully scoped package name in <code>npx</code> commands: <code>npx @lhci/cli autorun</code> not <code>npx lhci autorun</code></li>
+<li>Check who owns the bare namespace before running any AI-proposed <code>npx</code> command: <code>npm view &lt;package&gt; maintainers</code></li>
+<li>In CI pipelines, pin to scoped package names in your scripts — never rely on bare binary aliases</li>
+<li>Audit your project's dependency tree: generate an SBOM and review any bare-name packages against their scoped equivalents — if the bare name isn't owned by the same maintainer as the scoped package, treat it as a risk</li>
+</ol>
+</div>
+</details>
+
+<details>
+<summary>I'm a vibe coder / non-developer — what should I do?</summary>
+<div class="answer">
+<p>When an AI coding agent proposes a shell command containing <code>npx</code>, pause before approving. Ask the agent: <em>"Is this the official scoped package, or a bare alias?"</em> A well-calibrated agent will clarify. If it can't, ask it to use the fully scoped form instead.</p>
+<p>The permission prompt shows the exact command — but it can't tell you whether the npm package behind it is owned by the tool's maintainer or a stranger. That distinction is now yours to ask about.</p>
+<p>The <a href="https://gist.github.com/zkDeej/ebc290ca7fc5240e6fd4032ede24f1eb"><code>/npm-trust-check</code></a> slash command for Claude Code will run the check for you. For AI-scaffolded projects, use the <a href="https://gist.github.com/zkDeej/f4dc6bc45011eddbcc3e268032ad7edf"><code>/sbom-generate</code></a> slash command to generate a full dependency inventory — it will flag any bare-name packages that don't match their scoped equivalent. Improvements welcome.</p>
+</div>
+</details>
+
+<h2>Research &amp; Disclosure</h2>
+
+<details>
+<summary>Who else validated this?</summary>
+<div class="answer">
+Three independent methodologies converged on the same namespaces:
+<ul>
+<li><strong>AI-agent probing</strong> — live incident + cross-tool testing across Claude, Copilot, ChatGPT, Replit Agent, Gemini</li>
+<li><strong>Systematic README enumeration</strong> — Anupam Singh scanned ~170 GitHub organisations and 7,000+ repositories, identifying the same bare-alias collision pattern independently. Five new confirmed collisions found.</li>
+<li><strong>Hallucinated-package cross-check</strong> — Prof. Murtuza Jadliwala and Joe Spracklen (USENIX Security 2025 Distinguished Paper) shared their hallucinated JS package dataset. 5 names appear in both their hallucinated list and the BSQT bare-alias inventory. The names models most frequently hallucinate are the same names maintainers forgot to register. Slopsquatting subset.</li>
+</ul>
+Useful to note: An independent security firm (Aikido Security) had already identified some of the same vulnerable namespaces via full registry scanning and claimed <code>depcruise</code> as a defensive placeholder in July 2025 — discovered during this investigation via web search.
+</div>
+</details>
+
+<details>
+<summary>What did Anthropic say?</summary>
+<div class="answer">
+HackerOne #3682326 — filed as Critical (CVSS 9.0). Closed as Informative. Their framing, on record:<br><br>
+<em>"A model proposing an unscoped package name where a scoped one exists is a model-output quality issue, and the underlying typosquatted npm package is third-party dependency hijacking — neither is a vulnerability in Claude Code's security controls."</em><br><br>
+The security team considered the permission prompt the relevant control — and by that framing, it functioned correctly. They also noted this is a topic of active interest to their model safety team, drawing a clear line between the security boundary (working as designed) and the model behaviour question (tracked separately). The model safety team was contacted separately via modelbugbounty@anthropic.com with the draft version of this writeup.
+</div>
+</details>
+
+</body>
+</html>
